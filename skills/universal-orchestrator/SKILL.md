@@ -17,12 +17,14 @@ PLAN in ChatGPT -> EXECUTE in Codex -> REVIEW in ChatGPT
 
 ## Operating Rules
 
+- In Codex desktop, use the actual native bridge described in [native-bridge.md](references/native-bridge.md) before executing this workflow. Read local `bridge.local.json` for the configured ChatGPT task. Do not simulate ChatGPT planning or review with the executor itself.
+
 - ChatGPT owns task understanding, scope, constraints, acceptance criteria, approval gates, review judgment, and user-facing synthesis.
 - Codex owns bounded execution: reading files, editing files, running commands, tests, collecting diffs, and reporting evidence.
 - Keep irreversible or high-risk actions behind a human approval gate: production deploys, destructive deletes, credential changes, external sends, purchases, publishing, bulk data writes, and any action the user marked as approval-required.
 - Do not hide conflicts by weakening acceptance criteria or verifiers. Return `PARTIAL`, `BLOCKED`, or `NEEDS_HUMAN` when evidence is insufficient.
 - Preserve existing user work. Inspect dirty state before edits; isolate work when risk is high; never revert unrelated changes.
-- Limit repair loops to three total Codex execution attempts unless the user explicitly authorizes more.
+- Allow one initial execution and at most three repair executions unless the user explicitly authorizes more.
 
 ## Workflow
 
@@ -31,7 +33,7 @@ PLAN in ChatGPT -> EXECUTE in Codex -> REVIEW in ChatGPT
 3. Convert the plan into a Codex handoff using [handoff-contract.md](references/handoff-contract.md). Make the request minimal, executable, and bounded.
 4. Require Codex to report using [result-schema.md](references/result-schema.md): result, changed files, diff summary, tests, artifacts/evidence, unresolved issues, and any approval needs.
 5. Review independently using [review-schema.md](references/review-schema.md). Compare the original objective and acceptance criteria against evidence. Return exactly one status: `PASS`, `FAIL`, `PARTIAL`, `BLOCKED`, or `NEEDS_HUMAN`.
-6. On `FAIL` or fixable `PARTIAL`, send a minimal repair request from [repair-loop.md](references/repair-loop.md). Stop after three attempts, or earlier when a human gate is reached.
+6. On `FAIL` or fixable `PARTIAL`, send a minimal repair request from [repair-loop.md](references/repair-loop.md). Stop after three repairs, or earlier when a human gate is reached.
 
 ## Output To User
 

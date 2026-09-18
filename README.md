@@ -4,9 +4,9 @@
 
 ## 当前版本
 
-V1 提供 Codex Skill 指令、规划与交接模板、执行结果格式、独立审查规则、有限修复循环及人工授权边界。
+V1.1 提供 Codex Skill 指令、规划与交接模板，以及 Codex desktop 原生消息工具的自动交接流程。
 
-**能力边界：当前仓库没有跨应用传输层、自动调度程序或 ChatGPT 连接器。安装 Skill 不会自动连接 ChatGPT 与 Codex，也不会把本地 Skill 安装进 ChatGPT。** 使用真实双端流程需要另外提供可用的连接方式，或人工交接计划和结果。同一代理模拟三个角色不等于独立 ChatGPT 审查。
+**能力边界：自动交接由正在运行的 Codex desktop 任务调用应用原生消息工具完成。** 需要可用的 `read_thread` / `send_message_to_thread` 和可访问的 ChatGPT 对话。配置目标后，Codex 自动请求 ChatGPT 规划、执行本地工作、回传证据并读取审查结果。它不是独立后台服务，不会在应用关闭后继续，也不会自动接管所有 ChatGPT 对话。没有这些工具的 CLI 环境不能直接使用此适配器。
 
 ## 安装
 
@@ -24,6 +24,18 @@ fi
 
 在能发现本地 Skill 的 Codex 会话中使用：
 
+先在已安装 Skill 目录创建私有的 `bridge.local.json`，将 `chatgpt_thread_id` 填为你自己的 ChatGPT 对话 ID。不要提交该文件。
+
+```json
+{
+  "enabled": true,
+  "adapter": "codex-desktop-native-tools",
+  "chatgpt_thread_id": "YOUR_CHATGPT_CONVERSATION_ID",
+  "reply_timeout_seconds": 600,
+  "max_repairs": 3
+}
+```
+
 ```text
 用 $universal-orchestrator 处理以下任务：[目标]。
 先定义范围、约束、验收标准；执行后返回改动、测试、证据与未解决问题。
@@ -35,7 +47,7 @@ fi
 2. HANDOFF：把计划整理成有边界的执行合同。
 3. EXECUTE：执行并返回 result、diff summary、tests、artifacts/evidence、unresolved issues。
 4. REVIEW：独立对照证据给出 PASS / FAIL / PARTIAL / BLOCKED / NEEDS_HUMAN。
-5. REPAIR：生成最小修复请求。现有 Skill 上限为三次总执行尝试，包括首次执行。
+5. REPAIR：生成最小修复请求。首次执行后最多修复三次。
 
 生产部署、删除数据、外部发送或发布等高风险动作遵循用户授权边界。一次审查通过不自动授权后续高风险操作。
 
@@ -44,6 +56,7 @@ fi
 - `skills/universal-orchestrator/SKILL.md`：入口指令。
 - `skills/universal-orchestrator/agents/openai.yaml`：显示名称与默认提示。
 - `skills/universal-orchestrator/references/`：规划、路由、交接、结果、审查和修复模板。
+- `skills/universal-orchestrator/references/native-bridge.md`：真实消息交接、回复匹配、超时、恢复及证据规则。
 
 模板是 Markdown 格式约定，并非机器可验证的 JSON Schema。
 
@@ -51,4 +64,6 @@ fi
 
 发布前检查文件完整性、相对 Markdown 链接以及上传副本与已安装 Skill 的一致性。原先的本地烟雾检查只验证文档结构，未验证真实 ChatGPT PLAN → Codex EXECUTE → ChatGPT REVIEW 的跨应用调用，因此不将其标为端到端 PASS。
 
-自动传输、持久化任务状态、机器可验证 schemas、真实双端集成测试仍待实现。
+2026-09-18：新增原生适配流程后，已完成一次真实正常路径烟雾验证：ChatGPT 返回六项验收标准，Codex 创建并读取临时文件、计算哈希及 diff，回传后收到 ChatGPT 对六项标准的 PASS。审查基于工具输出，不代表审查者直接访问本地磁盘。尚未实测连续三轮修复、并发任务或重启恢复。用户的对话 ID 和完整会话记录不包含在公开仓库中。
+
+当前适配器利用宿主消息工具，由运行中的代理执行交接并保存任务证据。独立后台调度和机器可验证 JSON schemas 尚未实现。原生工具的会话读取可能存在同步延迟；必须等待匹配的新回复，不能把消息已接受当作规划或审查已完成。

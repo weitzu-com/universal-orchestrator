@@ -21,12 +21,12 @@ Files, behavior, evidence, or user work that should remain untouched.
 Checks that must pass before returning.
 
 ## Attempt Count
-1 of 3, 2 of 3, or 3 of 3.
+Repair 1 of 3, 2 of 3, or 3 of 3; the initial execution is not a repair.
 ```
 
 Stop the loop when:
 
-- attempt 3 completes without a `PASS`
+- repair 3 completes without a `PASS`
 - a human approval gate is reached
 - the same blocker appears twice
 - the repair would require widening scope beyond the original plan
