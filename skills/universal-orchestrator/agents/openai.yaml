@@ -1,0 +1,4 @@
+interface:
+  display_name: "Universal Orchestrator"
+  short_description: "Plan, hand off, review, and repair Codex work"
+  default_prompt: "Use $universal-orchestrator to plan the task, hand execution to Codex, and review the result."
